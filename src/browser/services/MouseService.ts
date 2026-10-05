@@ -535,7 +535,15 @@ export class MouseService implements IMouseService {
       if (this._mouseStateService.isDefaultEncoding) {
         this._coreService.triggerBinaryEvent(report);
       } else {
-        this._coreService.triggerDataEvent(report, true);
+        // A mouse report is not text input. Sending it as user input makes
+        // SelectionService drop the current selection -- and abort an
+        // in-progress drag, since clearSelection() also removes the mouse
+        // listeners -- every time a click or wheel is forwarded to the
+        // application. That breaks terminal-side selection in mouse mode
+        // (mouseEventsRequireAlt), where the wheel is deliberately not gated
+        // behind alt so it can keep scrolling the application (eg. tmux).
+        // The default-encoding branch above already behaves this way.
+        this._coreService.triggerDataEvent(report, false);
       }
     }
 
