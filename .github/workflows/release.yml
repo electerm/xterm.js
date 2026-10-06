@@ -1,30 +1,53 @@
 name: Release
 
+# Publishes ONLY the root package (@electerm/xterm).
+#
+# Do NOT switch this to `node ./bin/publish.js`: upstream's release script also
+# publishes headless/ (@xterm/headless), every changed addon, and on a "stable"
+# release runs bin/update-website.sh. On a fork that means trying to publish
+# packages owned by the xterm.js org, which 403s.
+#
+# Manual only, and defaults to a dry run, so a stray push can never publish.
+
 on:
-  push:
-    # If a commit reaches master, assume it has passed CI via PR and publish
-    # without running tests to save time to publish
-    branches: [ "master" ]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Pack and verify without publishing'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  id-token: write # required for npm trusted publishing (OIDC)
 
 jobs:
-  release:
+  publish:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
-    - name: Use Node.js 22.x
-      uses: actions/setup-node@v5
-      with:
-        node-version: 22.x
-        cache: 'npm'
-    - name: Install dependencies
-      run: npm ci
-    - name: Build
-      run: npm run setup
-    - name: Package headless
-      run: |
-        npm run package-headless
-        node ./bin/package_headless.js
-    - name: Publish to npm
-      env:
-        NPM_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      run: node ./bin/publish.js
+      - uses: actions/checkout@v5
+
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22.x
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # npm publish runs prepublishOnly -> npm run package (tsc + webpack + esbuild),
+      # so lib/ is built from source here and does not need to be committed.
+      - name: Publish @electerm/xterm
+        env:
+          # Must stay empty: setup-node writes an .npmrc with
+          # `_authToken=${NODE_AUTH_TOKEN}` and a real token here would shadow
+          # the OIDC exchange.
+          NODE_AUTH_TOKEN: ''
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            npm run publish-fork -- --dry-run
+          else
+            npm run publish-fork
+          fi

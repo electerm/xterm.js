@@ -1,5 +1,11 @@
 # [![xterm.js](images/logo-full.png)](https://xtermjs.org)
 
+> **This is a fork.** [`@electerm/xterm`](https://www.npmjs.com/package/@electerm/xterm) is
+> [xterm.js](https://github.com/xtermjs/xterm.js) with one small patch on top, published for
+> [electerm](https://github.com/electerm/electerm). Use upstream unless you specifically need the
+> patch. See [ELECTERM-FORK.md](ELECTERM-FORK.md) for what differs, how to consume it, and how to
+> rebase onto a new upstream release.
+
 Xterm.js is a frontend component that enables applications to bring fully-featured terminals to their users in the browser. It's used by popular projects such as [VS Code](https://code.visualstudio.com/) (and its forks), [Tabby](https://tabby.sh/) and [Hyper](https://hyper.is/).
 
 ## Features
