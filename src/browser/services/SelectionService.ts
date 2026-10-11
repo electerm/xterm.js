@@ -605,7 +605,16 @@ export class SelectionService extends Disposable implements ISelectionService {
    * @param event the mouse or keyboard event
    */
   public shouldColumnSelect(event: KeyboardEvent | MouseEvent): boolean {
-    if (this._optionsService.rawOptions.mouseEventsRequireAlt && this._mouseStateService.areMouseEventsActive) {
+    // `mouseEventsRequireAlt` reserves alt for forwarding mouse events to the
+    // application, so it must never also mean "column select". Gating this on
+    // `areMouseEventsActive` as well left column select reachable whenever the
+    // application was not in mouse-reporting mode: alt then painted the
+    // `column-select` crosshair cursor and a mousedown started a column
+    // selection instead of behaving normally. Since `updateCursorStyle` is
+    // driven by mousemove too, a stale alt modifier (pressing the Windows key
+    // opens the Start menu and the alt keyup is swallowed) kept re-adding the
+    // class, so the terminal stayed that way until it was restarted.
+    if (this._optionsService.rawOptions.mouseEventsRequireAlt) {
       return false;
     }
     return event.altKey && !(Browser.isMac && this._optionsService.rawOptions.macOptionClickForcesSelection);

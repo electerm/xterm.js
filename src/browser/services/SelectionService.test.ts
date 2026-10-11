@@ -517,5 +517,26 @@ describe('SelectionService', () => {
       assert.isFalse(selectionService.shouldForceSelection({ altKey: true } as MouseEvent));
     });
   });
+
+  describe('shouldColumnSelect', () => {
+    it('should never column select with alt when mouseEventsRequireAlt is enabled', () => {
+      optionsService.options.mouseEventsRequireAlt = true;
+      // Not in mouse-reporting mode. This is the case the previous
+      // `&& areMouseEventsActive` guard missed: alt then painted the
+      // column-select crosshair and a mousedown started a column selection
+      // instead of behaving normally (electerm#4592).
+      mouseStateService.areMouseEventsActive = false;
+      assert.isFalse(selectionService.shouldColumnSelect({ altKey: true } as MouseEvent));
+      // ...and it must stay off once the application does request mouse reports.
+      mouseStateService.areMouseEventsActive = true;
+      assert.isFalse(selectionService.shouldColumnSelect({ altKey: true } as MouseEvent));
+    });
+
+    it('should still column select with alt when mouseEventsRequireAlt is disabled', () => {
+      optionsService.options.mouseEventsRequireAlt = false;
+      assert.isTrue(selectionService.shouldColumnSelect({ altKey: true } as MouseEvent));
+      assert.isFalse(selectionService.shouldColumnSelect({ altKey: false } as MouseEvent));
+    });
+  });
 });
 
