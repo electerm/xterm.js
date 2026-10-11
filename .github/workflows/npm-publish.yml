@@ -39,6 +39,7 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       publish: ${{ steps.version.outputs.publish }}
+      tag: ${{ steps.version.outputs.tag }}
     # `[skip ci]` is already honoured natively by GitHub Actions; `[skip npm]`
     # lets a commit run the other workflows but skip this one. Because `publish`
     # needs this job, skipping here skips the whole workflow.
@@ -70,6 +71,17 @@ jobs:
           else
             echo "$pkg@$ver is not published yet — will build and publish."
             echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
+          # npm refuses to publish a prerelease version (e.g. 1.0.0-beta.1)
+          # without an explicit --tag, otherwise it would overwrite `latest`.
+          # Use `beta` for prereleases, `latest` for stable releases.
+          if [ "${ver#*-}" != "$ver" ]; then
+            echo "tag=beta" >> "$GITHUB_OUTPUT"
+            echo "dist-tag is beta (prerelease version)"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+            echo "dist-tag is latest (stable version)"
           fi
 
       - name: Summary
@@ -104,4 +116,5 @@ jobs:
       - name: Publish
         # Belt and braces: this also compares against the registry and no-ops if
         # the version appeared between the `check` job and now.
-        run: npx --yes @jsdevtools/npm-publish --access public --provenance
+        # --tag is required: npm rejects prereleases published to `latest`.
+        run: npx --yes @jsdevtools/npm-publish --access public --provenance --tag "${{ needs.check.outputs.tag }}"

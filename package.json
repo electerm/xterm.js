@@ -6,7 +6,10 @@
   "module": "lib/xterm.mjs",
   "style": "css/xterm.css",
   "types": "typings/xterm.d.ts",
-  "repository": "https://github.com/electerm/xterm.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/electerm/xterm.js.git"
+  },
   "license": "MIT",
   "workspaces": [
     "addons/*"
