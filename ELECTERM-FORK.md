@@ -1,7 +1,7 @@
 # electerm fork of xterm.js
 
 This repository is the [electerm](https://github.com/electerm/electerm) fork of
-[xterm.js](https://github.com/xtermjs/xterm.js). It carries one small fix and is published to npm as
+[xterm.js](https://github.com/xtermjs/xterm.js). It carries two small fixes and is published to npm as
 [`@electerm/xterm`](https://www.npmjs.com/package/@electerm/xterm).
 
 ## The branch
@@ -14,7 +14,9 @@ byte-identical; the only difference is `src/common/Version.ts`, which the publis
 from `package.json`). Pinning the base to the release electerm already uses keeps the diff to the fix
 alone, so a behaviour change can be attributed.
 
-## The change
+## The changes
+
+### Mouse reports are not user input
 
 `src/browser/services/MouseService.ts`, in `_triggerMouseEvent`:
 
@@ -48,6 +50,29 @@ tmux delivers to the terminal via OSC 52. See electerm's
 cannot be scrolled at all (`_handleWheel` always prevents default, and `_handlePassiveWheel` returns
 early once the protocol requests wheel events). `WriteBuffer.handleUserInput()` is only a "flush on
 the next frame" latency hint.
+
+### Alt must not column select when `mouseEventsRequireAlt` is set
+
+`src/browser/services/SelectionService.ts`, in `shouldColumnSelect`:
+
+```diff
+-    if (this._optionsService.rawOptions.mouseEventsRequireAlt && this._mouseStateService.areMouseEventsActive) {
++    if (this._optionsService.rawOptions.mouseEventsRequireAlt) {
+       return false;
+     }
+```
+
+**Why.** `mouseEventsRequireAlt` reserves alt for forwarding mouse events to the application, so it
+must never also mean "column select". Gating that on `areMouseEventsActive` as well left column
+select reachable whenever the application was *not* in mouse-reporting mode — a plain shell, for
+instance. Pressing alt then added the `column-select` class (the only `cursor: crosshair` in the app)
+and a mousedown started a column selection instead of behaving normally. Because `updateCursorStyle`
+is driven by `mousemove` too, a stale alt modifier kept re-adding the class: pressing the Windows key
+opens the Start menu, which blurs the window and swallows the alt `keyup`, so every later `mousemove`
+re-applied it and the terminal stayed in that state until it was restarted.
+`AltMouseCursorController`'s blur handler only resets `enable-mouse-events`, not `column-select`, so
+it never cleared this. Regression tests were added in `SelectionService.test.ts` covering both the
+enabled (never column select) and disabled (alt still column selects) cases.
 
 ## Publishing
 
@@ -84,7 +109,7 @@ of xterm.js is installed:
 
 ```json
 "devDependencies": {
-  "@xterm/xterm": "npm:@electerm/xterm@6.1.0-beta.292-electerm.1"
+  "@xterm/xterm": "npm:@electerm/xterm@6.1.0-beta.292-electerm.2"
 }
 ```
 

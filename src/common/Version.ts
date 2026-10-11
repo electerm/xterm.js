@@ -9,4 +9,4 @@
  * addons, so this fork publishes with `npm run publish-fork` instead and this
  * constant has to be kept in sync with package.json by hand.
  */
-export const XTERM_VERSION = '6.1.0-beta.292-electerm.1';
+export const XTERM_VERSION = '6.1.0-beta.292-electerm.2';

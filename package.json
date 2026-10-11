@@ -1,7 +1,7 @@
 {
   "name": "@electerm/xterm",
   "description": "xterm.js fork used by electerm — full xterm terminal, in your browser",
-  "version": "6.1.0-beta.292-electerm.1",
+  "version": "6.1.0-beta.292-electerm.2",
   "main": "lib/xterm.js",
   "module": "lib/xterm.mjs",
   "style": "css/xterm.css",
