@@ -193,6 +193,7 @@ export class DomRendererRowFactory {
          * - ext did not change
          * - underline from hover state did not change
          * - cell content renders to same letter-spacing
+         * - cell is not a wide char (see below)
          * - cell is not cursor
          */
         if (
@@ -208,6 +209,13 @@ export class DomRendererRowFactory {
           && cell.extended.ext === oldExt
           && isLinkHover === oldLinkHover
           && spacing === oldSpacing
+          // A wide char is drawn by a single glyph occupying two cells, but the
+          // span's letter-spacing can only compensate for one glyph. Merging
+          // two wide chars (e.g. "】【", consecutive CJK) therefore renders the
+          // span narrower than width * cellWidth and shifts the whole rest of
+          // the row left, which makes mouse selection land on the wrong cell.
+          // Keep every wide char in its own span instead.
+          && width === 1
           && !isCursorCell
           && !isJoined
           && !isDecorated
