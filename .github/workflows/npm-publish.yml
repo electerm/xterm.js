@@ -53,7 +53,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
-          registry-url: https://registry.npmjs.org/
 
       - name: Check whether this version is already published
         id: version
@@ -106,15 +105,21 @@ jobs:
         uses: actions/setup-node@v4
         with:
           # Node 24 bundles npm >= 11.5.1, the minimum for trusted publishing.
+          # No `registry-url` on purpose: it writes a placeholder
+          # `_authToken=${NODE_AUTH_TOKEN}` into .npmrc, which makes npm take the
+          # token path and fail with ENEEDAUTH instead of the OIDC exchange.
           node-version: '24'
-          registry-url: https://registry.npmjs.org/
           cache: npm
 
       - name: Install dependencies
         run: npm ci
 
       - name: Publish
-        # Belt and braces: this also compares against the registry and no-ops if
-        # the version appeared between the `check` job and now.
+        # Call `npm publish` directly. @jsdevtools/npm-publish is not usable
+        # here: it writes its own .npmrc with `_authToken=${NODE_AUTH_TOKEN}`
+        # and sets NODE_AUTH_TOKEN='', so npm takes the token path instead of
+        # the OIDC exchange, and its "already published" probe misfires on
+        # prerelease versions (it reported electerm.3 as published while the
+        # registry had only electerm.2).
         # --tag is required: npm rejects prereleases published to `latest`.
-        run: npx --yes @jsdevtools/npm-publish --access public --provenance --tag "${{ needs.check.outputs.tag }}"
+        run: npm publish --access public --provenance --tag "${{ needs.check.outputs.tag }}"
